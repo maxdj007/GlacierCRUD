@@ -16,7 +16,8 @@ the body will have the below structure :
 	"vaultName" : "<vaultName>",
 	"accesskey" : "<AWSAccessKey>",
 	"secretKey" : "<AWSSecretKey>",
-	"retrieval" : "<Retrieval-Method>"
+	"retrieval" : "<Retrieval-Method>",
+	"AWSEndpoint" : "<AWSEndpoint>"
 }
 ```
 
@@ -25,6 +26,7 @@ the body will have the below structure :
 * `<AWSAccessKey>` - replace with your AWS access key which has the right to make the retrieval request to Glacier.
 * `<AWSSecretKey>` -  replace with your AWS secret key which has the right to make the retrieval request to Glacier.
 * `<Retrieval-Method>` - Replace with the retrieval method that you want to use, just be vary when you use Bulk, or Expedited mode instead of Standard you should have enough provisions in place otherwise the request will fail.
+* `<AWSEndpoint>` - give the AWS endpoint to the region where your Glacier service is allocated e.g. glacier.us-west-2.amazonaws.com
 
 Note : 
 * if a successfull request is made you will get a JSON response containing the JobId provided by Glacier. A describe job will be initiated on this jobID on another thread to download the file when it ready to be downloaded from Glacier. And you will get a JSON reponse of form - 

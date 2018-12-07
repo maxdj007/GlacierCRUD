@@ -7,7 +7,11 @@ public class GetArchiveByIdRequest {
 	private String accesskey;
 	private String secretKey;
 	private String retrieval;
-	
+	private String AWSEndpoint;
+
+
+	public String getAWSEndpoint() { return AWSEndpoint; }
+	public void setAWSEndpoint(String AWSEndpoint) { this.AWSEndpoint = AWSEndpoint; }
 	public String getRetrieval() {
 		return retrieval;
 	}

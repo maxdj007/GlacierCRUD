@@ -37,9 +37,9 @@ public class ArchiveDownloadService {
 	@Autowired
 	private FileStorageService fileStorageService;
 	
-    public static AmazonGlacierClient glacierClient;
-    public static AmazonSQSClient sqsClient;
-    public static AmazonSNSClient snsClient;
+    private static AmazonGlacierClient glacierClient;
+    private static AmazonSQSClient sqsClient;
+    private static AmazonSNSClient snsClient;
     
     @SuppressWarnings("deprecation")
 	public File getArchivebyId(String archiveId, String access_key, String secret_key, String vaultName){
@@ -61,7 +61,7 @@ public class ArchiveDownloadService {
             System.out.println("Downloaded file to " + newFile.getAbsolutePath());
             
         } catch (Exception e) {
-            System.err.println(e);
+            logger.error(e.getMessage());
         }
         
         return newFile;
@@ -82,62 +82,63 @@ public class ArchiveDownloadService {
 
     
     @SuppressWarnings("deprecation")
-	public String lowLevelApiArchiveRetrieval(GetArchiveByIdRequest getArchiveByIdRequest) throws AWSCredentialsException, AWSCustomException {
+	private String lowLevelApiArchiveRetrieval(GetArchiveByIdRequest getArchiveByIdRequest) throws AWSCredentialsException, AWSCustomException {
 
     	AWSStaticCredentialsProvider credentials = getAWSCredentials(getArchiveByIdRequest.getAccesskey(), getArchiveByIdRequest.getSecretKey());
         glacierClient = new AmazonGlacierClient(credentials);
-        glacierClient.setEndpoint("glacier.eu-west-1.amazonaws.com");
+        glacierClient.setEndpoint(
+        		(getArchiveByIdRequest.getAWSEndpoint() == null || "".equals(getArchiveByIdRequest.getAWSEndpoint())) ? "glacier.eu-west-1.amazonaws.com"
+						: getArchiveByIdRequest.getAWSEndpoint());
         JobParameters jobParameters = getJobParameters(getArchiveByIdRequest.getArchiveId(), getArchiveByIdRequest.getRetrieval());
 
         InitiateJobResult initiateJobResult = getJobResults(getArchiveByIdRequest.getVaultName(), jobParameters);
 
         String jobId = initiateJobResult.getJobId();
 
-        runDescribeJob(jobId, getArchiveByIdRequest.getVaultName(), credentials);
+        runDescribeJob(jobId, getArchiveByIdRequest.getVaultName(), credentials,
+				(getArchiveByIdRequest.getAWSEndpoint() == null || "".equals(getArchiveByIdRequest.getAWSEndpoint())) ? "glacier.eu-west-1.amazonaws.com"
+						: getArchiveByIdRequest.getAWSEndpoint());
     	
     	return jobId;
     }
     
-    public void runDescribeJob(String jobId, String vaultName, AWSStaticCredentialsProvider credentials){
+    private void runDescribeJob(String jobId, String vaultName, AWSStaticCredentialsProvider credentials, String endpoint){
     	
-    	Thread t = new Thread(new Runnable() {
-		    @SuppressWarnings("deprecation")
-			public void run() {
-		    	AmazonGlacierClient glacierClient = new AmazonGlacierClient(credentials);
-		    	glacierClient.setEndpoint("glacier.eu-west-1.amazonaws.com");
-		    	DescribeJobRequest request = new DescribeJobRequest(vaultName, jobId);
-		    	boolean flag = false;
-		    	while(!flag){
-			    	DescribeJobResult result = glacierClient.describeJob(request);
-			    	if(!result.getStatusCode().equals("Failed")){
-				    	if(result.isCompleted()){
-				    		flag = true;
-				    		try {
-				    				downloadFile(jobId, vaultName, glacierClient);
-							} catch (IOException e) {
-								logger.error("Exception :" +e.getMessage() + "with cause :" + e.getCause());
-							}
-				    	} else {
-				    		logger.info("Job yet not completed sleeping for one minute");
-				    		try {
-								Thread.sleep(60000);
-							} catch (InterruptedException e) {
-								logger.error(e.getMessage() + "with cause :" + e.getCause());
-							}
-				    	}
-			    	} else {
-			    		flag = true;
-	    				logger.error("Job with job id : {} has failed", jobId);
-	    			}
-		    	}
-		    }
+    	Thread t = new Thread(() -> {
+			AmazonGlacierClient glacierClient = new AmazonGlacierClient(credentials);
+			glacierClient.setEndpoint(endpoint);
+			DescribeJobRequest request = new DescribeJobRequest(vaultName, jobId);
+			boolean flag = false;
+			while(!flag){
+				DescribeJobResult result = glacierClient.describeJob(request);
+				if(!result.getStatusCode().equals("Failed")){
+					if(result.isCompleted()){
+						flag = true;
+						try {
+								downloadFile(jobId, vaultName, glacierClient);
+						} catch (IOException e) {
+							logger.error("Exception :" +e.getMessage() + "with cause :" + e.getCause());
+						}
+					} else {
+						logger.info("Job yet not completed sleeping for one minute");
+						try {
+							Thread.sleep(60000);
+						} catch (InterruptedException e) {
+							logger.error(e.getMessage() + "with cause :" + e.getCause());
+						}
+					}
+				} else {
+					flag = true;
+					logger.error("Job with job id : {} has failed", jobId);
+				}
+			}
 		});
 
 		t.start();
     	
     }
     
-    public File downloadFile(String jobId, String vaultName, AmazonGlacierClient glacierClient) throws IOException{
+    private File downloadFile(String jobId, String vaultName, AmazonGlacierClient glacierClient) throws IOException{
     	GetJobOutputRequest jobOutputRequest = new GetJobOutputRequest()
     	        .withJobId(jobId)
     	        .withVaultName(vaultName);
