@@ -1,6 +1,6 @@
-#CRUD operation on Glacier
+# CRUD operation on Glacier
 
-###As of right now only retrieval API is available I will add rest soon.
+### As of right now only retrieval API is available I will add rest soon.
 
 ## You will need **Java 1.8** and **Maven** to run this service as this makes use of spring boot.
 
@@ -20,14 +20,14 @@ the body will have the below structure :
 }
 ```
 
-* <archiveId> - replace this with the archive ID you want to extract from glacier.
-* <vaultName> - replace this with the name of your vault.
-* <AWSAccessKey> - replace with your AWS access key which has the right to make the retrieval request to Glacier.
-* <AWSSecretKey> -  replace with your AWS secret key which has the right to make the retrieval request to Glacier.
-* <Retrieval-Method> - Replace with the retrieval method that you want to use, just be vary when you use Bulk, or Expedited mode instead of Standard you should have enough provisions in place otherwise the request will fail.
+* `<archiveId>` - replace this with the archive ID you want to extract from glacier.
+* `<vaultName>` - replace this with the name of your vault.
+* `<AWSAccessKey>` - replace with your AWS access key which has the right to make the retrieval request to Glacier.
+* `<AWSSecretKey>` -  replace with your AWS secret key which has the right to make the retrieval request to Glacier.
+* `<Retrieval-Method>` - Replace with the retrieval method that you want to use, just be vary when you use Bulk, or Expedited mode instead of Standard you should have enough provisions in place otherwise the request will fail.
 
 Note : 
-* if a successfull request is made you will get a JSOn response containing the JobId provided by Glacier. A describe job will be initiated on this jobID on another thread to download the file when it ready to be downloaded from Glacier. And you will get a JSON reponse of form - 
+* if a successfull request is made you will get a JSON response containing the JobId provided by Glacier. A describe job will be initiated on this jobID on another thread to download the file when it ready to be downloaded from Glacier. And you will get a JSON reponse of form - 
 	```
 	{
     "status": "SUCCESS",
